@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Subscriber {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  verified      Boolean        @default(false)
+  verificationToken String?    @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  preferences   Preference[]
+  notifications Notification[]
+
+  @@index([email])
+  @@index([verificationToken])
+}
+
+model Preference {
+  id           String     @id @default(cuid())
+  subscriberId String
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  category     String     // e.g., "Software Engineering", "Marketing", "Design"
+  location     String?    // e.g., "Remote", "New York", "San Francisco"
+  keywords     String[]   // Array of keywords
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([subscriberId])
+  @@index([category])
+}
+
+model Job {
+  id          String         @id @default(cuid())
+  title       String
+  company     String
+  location    String
+  description String         @db.Text
+  category    String
+  url         String
+  salary      String?
+  type        String         // "Full-time", "Part-time", "Contract", "Internship"
+  remote      Boolean        @default(false)
+  postedAt    DateTime       @default(now())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  notifications Notification[]
+
+  @@index([category])
+  @@index([location])
+  @@index([postedAt])
+  @@index([company])
+}
+
+model Notification {
+  id           String     @id @default(cuid())
+  subscriberId String
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  jobId        String
+  job          Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  sent         Boolean    @default(false)
+  sentAt       DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([subscriberId, sent])
+  @@index([jobId])
+}
